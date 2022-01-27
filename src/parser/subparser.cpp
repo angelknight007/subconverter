@@ -184,7 +184,8 @@ void explodeVmess(std::string vmess, Proxy &node)
     GetMember(jsondata, "aid", aid);
     GetMember(jsondata, "net", net);
     GetMember(jsondata, "tls", tls);
-
+    GetMember(jsondata, "servername", sni);
+    
     GetMember(jsondata, "host", host);
     switch(to_int(version))
     {
@@ -206,7 +207,7 @@ void explodeVmess(std::string vmess, Proxy &node)
 
     add = trim(add);
 
-    vmessConstruct(node, V2RAY_DEFAULT_GROUP, ps, add, port, type, id, aid, net, "auto", path, host, "", tls);
+    vmessConstruct(node, V2RAY_DEFAULT_GROUP, ps, add, port, type, id, aid, net, "auto", sni, path, host, "", tls);
 }
 
 void explodeVmessConf(std::string content, std::vector<Proxy> &nodes)
@@ -214,7 +215,7 @@ void explodeVmessConf(std::string content, std::vector<Proxy> &nodes)
     Proxy node;
     Document json;
     rapidjson::Value nodejson, settings;
-    std::string group, ps, add, port, type, id, aid, net, path, host, edge, tls, cipher, subid;
+    std::string group, ps, add, port, type, id, aid, net, sni, path, host, edge, tls, cipher, subid;
     tribool udp, tfo, scv;
     int configType;
     uint32_t index = nodes.size();
@@ -237,6 +238,7 @@ void explodeVmessConf(std::string content, std::vector<Proxy> &nodes)
                 nodejson = json["outbounds"][0];
                 add = GetMember(nodejson["settings"]["vnext"][0], "address");
                 port = GetMember(nodejson["settings"]["vnext"][0], "port");
+                sni = GetMember(nodejson["settings"]["vnext"][0], "servername");
                 if(port == "0")
                     return;
                 if(nodejson["settings"]["vnext"][0]["users"].Size())
@@ -284,7 +286,7 @@ void explodeVmessConf(std::string content, std::vector<Proxy> &nodes)
                         }
                     }
                 }
-                vmessConstruct(node, V2RAY_DEFAULT_GROUP, add + ":" + port, add, port, type, id, aid, net, cipher, path, host, edge, tls, udp, tfo, scv);
+                vmessConstruct(node, V2RAY_DEFAULT_GROUP, add + ":" + port, add, port, type, id, aid, net, cipher, sni, path, host, edge, tls, udp, tfo, scv);
                 nodes.emplace_back(std::move(node));
             }
             return;
@@ -336,7 +338,8 @@ void explodeVmessConf(std::string content, std::vector<Proxy> &nodes)
             json["vmess"][i]["requestHost"] >> host;
             json["vmess"][i]["streamSecurity"] >> tls;
             json["vmess"][i]["security"] >> cipher;
-            vmessConstruct(node, V2RAY_DEFAULT_GROUP, ps, add, port, type, id, aid, net, cipher, path, host, "", tls, udp, tfo, scv);
+            json["vmess"][i]["servername"] >> sni;
+            vmessConstruct(node, V2RAY_DEFAULT_GROUP, ps, add, port, type, id, aid, net, cipher, sni, path, host, "", tls, udp, tfo, scv);
             break;
         case 3: //ss config
             json["vmess"][i]["id"] >> id;
@@ -798,7 +801,7 @@ void explodeTrojan(std::string trojan, Proxy &node)
 void explodeQuan(const std::string &quan, Proxy &node)
 {
     std::string strTemp, itemName, itemVal;
-    std::string group = V2RAY_DEFAULT_GROUP, ps, add, port, cipher, type = "none", id, aid = "0", net = "tcp", path, host, edge, tls;
+    std::string group = V2RAY_DEFAULT_GROUP, ps, add, port, cipher, type = "none", id, aid = "0", net = "tcp", sni, path, host, edge, tls;
     string_array configs, vArray, headers;
     strTemp = regReplace(quan, "(.*?) = (.*)", "$1,$2");
     configs = split(strTemp, ",");
@@ -858,14 +861,14 @@ void explodeQuan(const std::string &quan, Proxy &node)
         if(path.empty())
             path = "/";
 
-        vmessConstruct(node, group, ps, add, port, type, id, aid, net, cipher, path, host, edge, tls);
+        vmessConstruct(node, group, ps, add, port, type, id, aid, net, cipher, sni, path, host, edge, tls);
     }
 }
 
 void explodeNetch(std::string netch, Proxy &node)
 {
     Document json;
-    std::string type, group, remark, address, port, username, password, method, plugin, pluginopts, protocol, protoparam, obfs, obfsparam, id, aid, transprot, faketype, host, edge, path, tls;
+    std::string type, group, remark, address, port, username, password, method, plugin, pluginopts, protocol, protoparam, obfs, obfsparam, id, aid, transprot, faketype, host, edge, sni, path, tls;
     tribool udp, tfo, scv;
     netch = urlSafeBase64Decode(netch.substr(8));
 
@@ -920,13 +923,14 @@ void explodeNetch(std::string netch, Proxy &node)
         aid = GetMember(json, "AlterID");
         transprot = GetMember(json, "TransferProtocol");
         faketype = GetMember(json, "FakeType");
+        sni = GetMember(json, "Servername");
         host = GetMember(json, "Host");
         path = GetMember(json, "Path");
         edge = GetMember(json, "Edge");
         tls = GetMember(json, "TLSSecure");
         if(group.empty())
             group = V2RAY_DEFAULT_GROUP;
-        vmessConstruct(node, group, remark, address, port, faketype, id, aid, transprot, method, path, host, edge, tls, udp, tfo, scv);
+        vmessConstruct(node, group, remark, address, port, faketype, id, aid, transprot, method, sni, path, host, edge, tls, udp, tfo, scv);
         break;
     case "Socks5"_hash:
         username = GetMember(json, "Username");
@@ -1266,7 +1270,7 @@ void explodeStdVless(std::string vless, Proxy &node)
     if(remarks.empty())
         remarks = add + ":" + port;
 
-    vlessConstruct(node, XRAY_DEFAULT_GROUP, remarks, add, port, id, net, flow, sni, type, path, host, "", tls);
+    vlessConstruct(node, XRAY_DEFAULT_GROUP, remarks, add, port, id, net, flow, sni, type, sni, path, host, "", tls);
     return;
 }
 
@@ -1349,7 +1353,7 @@ void explodeKitsunebi(std::string kit, Proxy &node)
     if(remarks.empty())
         remarks = add + ":" + port;
 
-    vmessConstruct(node, V2RAY_DEFAULT_GROUP, remarks, add, port, type, id, aid, net, cipher, path, host, "", tls);
+    vmessConstruct(node, V2RAY_DEFAULT_GROUP, remarks, add, port, type, id, aid, net, cipher, sni, path, host, "", tls);
 }
 
 bool explodeSurge(std::string surge, std::vector<Proxy> &nodes)
@@ -1385,7 +1389,7 @@ bool explodeSurge(std::string surge, std::vector<Proxy> &nodes)
     {
         std::string remarks, server, port, method, username, password; //common
         std::string plugin, pluginopts, pluginopts_mode, pluginopts_host, mod_url, mod_md5; //ss
-        std::string id, net, tls, host, edge, path; //v2
+        std::string id, net, tls, host, edge, path, sni; //v2
         std::string protocol, protoparam; //ssr
         std::string version;
         std::string itemName, itemVal, config;
@@ -1613,7 +1617,7 @@ bool explodeSurge(std::string surge, std::vector<Proxy> &nodes)
             if(host.empty() && !isIPv4(server) && !isIPv6(server))
                 host = server;
 
-            vmessConstruct(node, V2RAY_DEFAULT_GROUP, remarks, server, port, "", id, "0", net, method, path, host, edge, tls, udp, tfo, scv, tls13);
+            vmessConstruct(node, V2RAY_DEFAULT_GROUP, remarks, server, port, "", id, "0", net, method, sni, path, host, edge, tls, udp, tfo, scv, tls13);
             break;
         case "http"_hash: //http proxy
             server = trim(configs[1]);
@@ -1899,7 +1903,7 @@ bool explodeSurge(std::string surge, std::vector<Proxy> &nodes)
                 if(host.empty() && !isIPv4(server) && !isIPv6(server))
                     host = server;
 
-                vmessConstruct(node, V2RAY_DEFAULT_GROUP, remarks, server, port, "", id, "0", net, method, path, host, "", tls, udp, tfo, scv, tls13);
+                vmessConstruct(node, V2RAY_DEFAULT_GROUP, remarks, server, port, "", id, "0", net, method, sni, path, host, "", tls, udp, tfo, scv, tls13);
                 break;
             case "trojan"_hash: //quantumult x style trojan link
                 server = trim(configs[0].substr(0, configs[0].rfind(":")));
