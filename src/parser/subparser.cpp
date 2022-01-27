@@ -43,6 +43,7 @@ void vmessConstruct(Proxy &node, const std::string &group, const std::string &re
     node.UserId = id.empty() ? "00000000-0000-0000-0000-000000000000" : id;
     node.AlterId = to_int(aid);
     node.EncryptMethod = cipher;
+    node.Sni = sni.empty() ? "" : sni;
     node.TransferProtocol = net.empty() ? "tcp" : net;
     node.Edge = edge;
 
@@ -868,7 +869,7 @@ void explodeQuan(const std::string &quan, Proxy &node)
 void explodeNetch(std::string netch, Proxy &node)
 {
     Document json;
-    std::string type, group, remark, address, port, username, password, method, plugin, pluginopts, protocol, protoparam, obfs, obfsparam, id, aid, transprot, faketype, host, edge, sni, path, tls;
+    std::string type, group, remark, address, port, username, password, method, plugin, pluginopts, protocol, protoparam, obfs, obfsparam, id, aid, transprot, faketype, sni, host, edge, path, tls;
     tribool udp, tfo, scv;
     netch = urlSafeBase64Decode(netch.substr(8));
 
@@ -1270,13 +1271,13 @@ void explodeStdVless(std::string vless, Proxy &node)
     if(remarks.empty())
         remarks = add + ":" + port;
 
-    vlessConstruct(node, XRAY_DEFAULT_GROUP, remarks, add, port, id, net, flow, sni, type, sni, path, host, "", tls);
+    vlessConstruct(node, XRAY_DEFAULT_GROUP, remarks, add, port, id, net, flow, sni, type, path, host, "", tls);
     return;
 }
 
 void explodeShadowrocket(std::string rocket, Proxy &node)
 {
-    std::string add, port, type, id, aid, net = "tcp", path, host, tls, cipher, remarks;
+    std::string add, port, type, id, aid, net = "tcp", sni, path, host, tls, cipher, remarks;
     std::string obfs; //for other style of link
     std::string addition;
     rocket = rocket.substr(8);
@@ -1315,12 +1316,12 @@ void explodeShadowrocket(std::string rocket, Proxy &node)
     if(remarks.empty())
         remarks = add + ":" + port;
 
-    vmessConstruct(node, V2RAY_DEFAULT_GROUP, remarks, add, port, type, id, aid, net, cipher, path, host, "", tls);
+    vmessConstruct(node, V2RAY_DEFAULT_GROUP, remarks, add, port, type, id, aid, net, cipher, sni, path, host, "", tls);
 }
 
 void explodeKitsunebi(std::string kit, Proxy &node)
 {
-    std::string add, port, type, id, aid = "0", net = "tcp", path, host, tls, cipher = "auto", remarks;
+    std::string add, port, type, id, aid = "0", net = "tcp", sni, path, host, tls, cipher = "auto", remarks;
     std::string addition;
     string_size pos;
     kit = kit.substr(9);
